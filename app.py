@@ -1,15 +1,15 @@
+# ==================== IMPORTS ====================
 import streamlit as st
 import time
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
 from openpyxl import Workbook
 import base64
 
 # ==================== CẤU HÌNH GIAO DIỆN ====================
-st.set_page_config(page_title="Trình thu thập dữ liệu Google Maps", page_icon="", layout="wide")
+st.set_page_config(page_title="Trình thu thập dữ liệu Google Maps", page_icon="🗺️", layout="wide")
 
 st.markdown("""
     <style>
@@ -27,13 +27,13 @@ st.markdown("""
         .stText, 
         .stMarkdown, 
         .stLabel, 
-        .st-emotion-cache-1cpxq0x, /* Selector cho các label trong Streamlit */
-        .st-emotion-cache-vk3ypb, /* Các container text chung của Streamlit */
+        .st-emotion-cache-1cpxq0x,
+        .st-emotion-cache-vk3ypb,
         div, 
         span, 
         p, 
         li,
-        .st-emotion-cache-1oe2x1e { /* Một số selector Streamlit khác */
+        .st-emotion-cache-1oe2x1e { 
             color: #15287a !important; 
         }
 
@@ -137,14 +137,21 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==================== HÀM CRAWL GOOGLE MAPS ====================
-# (Giữ nguyên, không thay đổi chức năng)
+
+# HÀM NÀY ĐÃ ĐƯỢC CHỈNH SỬA ĐỂ TƯƠNG THÍCH VỚI STREAMLIT CLOUD (KHÔNG DÙNG webdriver-manager)
 def crawl_google_maps(query):
+    # Cấu hình ChromeOptions cho môi trường Cloud
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless=new")
+    options.add_argument("--headless=new") # Chế độ ẩn danh, bắt buộc phải có cho môi trường Cloud
     options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox") # Bắt buộc cho môi trường Linux
+    options.add_argument("--disable-dev-shm-usage") # Tối ưu hóa bộ nhớ tạm thời
     options.add_argument("--window-size=1920,1080")
-    # LƯU Ý: Nếu chạy trên môi trường không có kết nối internet hoặc không cài đặt Chrome/Chromedriver, dòng này có thể gây lỗi.
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    
+    # KHỞI TẠO DRIVER SỬ DỤNG ĐƯỜNG DẪN TRỰC TIẾP
+    # '/usr/bin/chromedriver' là đường dẫn mặc định khi cài đặt gói 'chromium' qua 'packages.txt'
+    service = Service(executable_path="/usr/bin/chromedriver")
+    driver = webdriver.Chrome(service=service, options=options)
 
     st.info("Đang mở Google Maps...")
     driver.get(f"https://www.google.com/maps/search/{query}")
@@ -155,14 +162,16 @@ def crawl_google_maps(query):
 
     # Cuộn để tải nhiều kết quả hơn
     try:
-        # TÌM XPATH TỐI ƯU HƠN HOẶC DÙNG DATA-ROLE NẾU CÓ
+        # Tìm div chứa kết quả cuộn
         scrollable_div = driver.find_element(By.XPATH, "//div[contains(@aria-label, 'Kết quả') or contains(@aria-label, 'Results')]")
+        # Cuộn 8 lần để tải thêm kết quả
         for _ in range(8):
             driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", scrollable_div)
             time.sleep(2)
-    except:
-        st.warning("Không thể cuộn danh sách — có thể giao diện Google hiện tại khác.")
+    except Exception as e:
+        st.warning(f"Không thể cuộn danh sách (Lỗi: {e}) — có thể giao diện Google hiện tại khác.")
 
+    # Tìm tất cả các link địa điểm
     listings = driver.find_elements(By.XPATH, "//a[contains(@href, '/maps/place')]")
     st.write(f"Tìm thấy **{len(listings)}** địa điểm.")
 
@@ -236,7 +245,13 @@ def crawl_google_maps(query):
             driver.switch_to.window(driver.window_handles[0])
 
         except Exception as e:
-            st.warning(f"Lỗi khi xử lý địa điểm: {e}")
+            st.warning(f"Lỗi khi xử lý địa điểm {name}: {e}")
+            # Đảm bảo driver luôn đóng và quay lại cửa sổ chính nếu có lỗi xảy ra
+            try:
+                driver.close()
+                driver.switch_to.window(driver.window_handles[0])
+            except:
+                pass
             continue
 
         progress_bar.progress((i + 1) / len(listings))
@@ -265,7 +280,7 @@ with col1:
             # st.session_state để lưu dữ liệu tạm thời
             st.session_state['data'] = []
             
-            with st.spinner("Đang xử lý, mở trình duyệt ẩn..."):
+            with st.spinner("Đang xử lý, mở trình duyệt ẩn... (Bước này có thể mất thời gian do Selenium đang chạy)"):
                 data = crawl_google_maps(keyword)
                 st.session_state['data'] = data
                 
@@ -294,7 +309,7 @@ with col2:
     st.markdown("<h3><br>Bản đồ trực quan</h3>", unsafe_allow_html=True) # Tạo khoảng trống
     st.markdown("""
         <div class="map-container">
-            <img src="https://bizweb.dktcdn.net/100/235/532/articles/ho-chi-minh-ho-tro-cap-nhat-google-maps-ve-dich-covid-19-1.jpg?v=1623947998367" alt="Hình ảnh minh họa Google Maps" title="Minh họa giao diện Google Maps" />
+            <img src="https://placehold.co/400x300/15287a/FFFFFF?text=MINH+HOA+GOOGLE+MAPS" alt="Hình ảnh minh họa Google Maps" title="Minh họa giao diện Google Maps" />
         </div>
         <p style='text-align: center; color: #888; font-size: 0.9em; margin-top: 10px;'>Minh họa bản đồ số</p>
     """, unsafe_allow_html=True)
