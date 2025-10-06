@@ -138,10 +138,12 @@ st.markdown("""
 
 # ==================== HÀM CRAWL GOOGLE MAPS ====================
 
-# HÀM NÀY ĐÃ ĐƯỢC CHỈNH SỬA ĐỂ TƯƠNG THÍCH VỚI STREAMLIT CLOUD (KHÔNG DÙNG webdriver-manager)
 def crawl_google_maps(query):
     # Cấu hình ChromeOptions cho môi trường Cloud
     options = webdriver.ChromeOptions()
+    # BỔ SUNG QUAN TRỌNG: Chỉ định vị trí tệp thực thi Chromium
+    options.binary_location = '/usr/bin/chromium-browser' 
+    
     options.add_argument("--headless=new") # Chế độ ẩn danh, bắt buộc phải có cho môi trường Cloud
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox") # Bắt buộc cho môi trường Linux
@@ -151,6 +153,8 @@ def crawl_google_maps(query):
     # KHỞI TẠO DRIVER SỬ DỤNG ĐƯỜNG DẪN TRỰC TIẾP
     # '/usr/bin/chromedriver' là đường dẫn mặc định khi cài đặt gói 'chromium' qua 'packages.txt'
     service = Service(executable_path="/usr/bin/chromedriver")
+    
+    # KHỞI TẠO DRIVER
     driver = webdriver.Chrome(service=service, options=options)
 
     st.info("Đang mở Google Maps...")
