@@ -141,7 +141,9 @@ st.markdown("""
 def crawl_google_maps(query):
     # Cấu hình ChromeOptions cho môi trường Cloud
     options = webdriver.ChromeOptions()
-    # BỔ SUNG QUAN TRỌNG: Chỉ định vị trí tệp thực thi Chromium
+    
+    # QUAN TRỌNG: Chỉ định vị trí tệp thực thi Chromium (Browser)
+    # Gói 'chromium' được cài đặt qua packages.txt
     options.binary_location = '/usr/bin/chromium-browser' 
     
     options.add_argument("--headless=new") # Chế độ ẩn danh, bắt buộc phải có cho môi trường Cloud
@@ -149,12 +151,16 @@ def crawl_google_maps(query):
     options.add_argument("--no-sandbox") # Bắt buộc cho môi trường Linux
     options.add_argument("--disable-dev-shm-usage") # Tối ưu hóa bộ nhớ tạm thời
     options.add_argument("--window-size=1920,1080")
+    # Giả lập User-Agent của trình duyệt desktop để tránh bị chặn
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36")
     
-    # KHỞI TẠO DRIVER SỬ DỤNG ĐƯỜNG DẪN TRỰC TIẾP
-    # '/usr/bin/chromedriver' là đường dẫn mặc định khi cài đặt gói 'chromium' qua 'packages.txt'
+    # KHỞI TẠO SERVICE VÀ CHỈ ĐỊNH ĐƯỜNG DẪN TRỰC TIẾP ĐẾN CHROMEDRIVER
+    # Gói 'chromium-chromedriver' được cài đặt qua packages.txt
+    # Dùng tên đối số rõ ràng 'executable_path' hoặc 'driver_path'
     service = Service(executable_path="/usr/bin/chromedriver")
     
     # KHỞI TẠO DRIVER
+    # Dùng service và options đã được cấu hình đường dẫn tuyệt đối
     driver = webdriver.Chrome(service=service, options=options)
 
     st.info("Đang mở Google Maps...")
