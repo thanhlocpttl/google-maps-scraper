@@ -1,2 +1,1 @@
-chromium-browser-stable
-chromium-chromedriver
+chromium
